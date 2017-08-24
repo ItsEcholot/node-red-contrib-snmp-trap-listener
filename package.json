@@ -12,6 +12,6 @@
     }
   },
   "dependencies": {
-    "snmpjs": "joyent/node-snmpjs"
+    "snmpjs": "git+https://github.com/joyent/node-snmpjs.git"
   }
 }
