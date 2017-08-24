@@ -10,5 +10,8 @@
     "nodes": {
       "snmp-trap-listener": "snmp-trap-listener.js"
     }
+  },
+  "dependencies": {
+    "snmpjs": "joyent/node-snmpjs"
   }
 }
