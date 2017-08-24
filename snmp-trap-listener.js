@@ -11,9 +11,6 @@ module.exports = (RED, debugSettings) => {
         if (RED)
             RED.nodes.createNode(this,config);
 
-        if (!config.port)
-            config.port = 161;
-
         let node = this;
         // Polyfills if RED is unavailable
         if (!RED) {
@@ -25,13 +22,21 @@ module.exports = (RED, debugSettings) => {
                 console.log('Would execute');
                 console.dir(cb);
             };
+            node.warn = msg => {
+                console.warn(msg);
+            };
         }
         let timeoutStatus;
+        if (!config.port) {
+            config.port = 161;
+            node.warn('No port set... Setting port to 161');
+        }
         node.status({fill: 'yellow', shape: 'dot', text: 'connecting'});
         const trapd = snmp.createTrapListener();
 
         node.on('close', function() {
             // Cleanup before node is being deleted.
+            node.warn('Restarting');
             trapd.close();
         });
 
@@ -44,8 +49,15 @@ module.exports = (RED, debugSettings) => {
             }, 50);
 
             if (config.community)
-                if (msg.community.toString() !== config.community)
+                if (msg.community.toString() !== config.community) {
+                    node.warn('Received trap with wrong community string');
                     return;
+                }
+            if (config.ipfilter && config.ipmask)
+                if ((IPnumber(config.ipfilter) & IPmask(config.ipmask)) != IPnumber(msg._src.address)) {
+                    node.warn('Received trap with wrong ip according to filter settings');
+                    return;
+                }
 
             const payload = [];
             const serializedMsg = snmp.message.serializer(msg)['pdu'];
@@ -63,8 +75,21 @@ module.exports = (RED, debugSettings) => {
         });
 
         trapd.bind({family: 'udp4', port: parseInt(config.port)}, () => {
+            node.warn(`Success binding to port ${config.port} and listening for traps`);
             node.status({fill: 'green', shape: 'dot', text: 'ready'});
         });
+    }
+
+    function IPnumber(IPaddress) {
+        let ip = IPaddress.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+        if(ip) {
+            return (+ip[1]<<24) + (+ip[2]<<16) + (+ip[3]<<8) + (+ip[4]);
+        }
+        return null;
+    }
+
+    function IPmask(maskSize) {
+        return -1<<(32-maskSize)
     }
 
     if (RED)

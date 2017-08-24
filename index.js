@@ -5,5 +5,7 @@ const snmpTrapListener      = require('./snmp-trap-listener');
 snmpTrapListener(null, {
     port: 161,
     oids: '1.3.1',
-    community: ''
+    community: '',
+    ipfilter: '',
+    ipmask: '',
 });
