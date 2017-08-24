@@ -43,6 +43,10 @@ module.exports = (RED, debugSettings) => {
                 node.status({fill: 'green', shape: 'dot', text: 'ready'});
             }, 50);
 
+            if (config.community)
+                if (msg.community.toString() !== config.community)
+                    return;
+
             const payload = [];
             const serializedMsg = snmp.message.serializer(msg)['pdu'];
 

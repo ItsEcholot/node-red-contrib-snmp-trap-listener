@@ -5,6 +5,7 @@
         defaults: {
             oids: {value: ""},
             port: {value: 161, required: true, validate: RED.validators.number()},
+            community: {value: ""},
         },
         inputs: 0,
         outputs: 1,
@@ -21,8 +22,11 @@
         <!--<input type="text" id="node-input-name" placeholder="Name">-->
 
         <label for="node-input-port"><i class="icon-tag"></i> Port</label>
-        <input type="number" id="node-input-port">
-
+        <input type="number" id="node-input-port"></input>
+<br>
+        <label for="node-input-community"><i class="icon-tag"></i> Community</label>
+        <input type="text" id="node-input-community" placeholder="Community">
+<br>
         <label for="node-input-oids"><i class="icon-tag"></i> OIDs (seperated by new line)</label>
         <textarea id="node-input-oids" placeholder=".1.3.1"></textarea>
     </div>
