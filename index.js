@@ -1,0 +1,1 @@
+// Launch this file to use the node outside of Node-RED

@@ -1,0 +1,26 @@
+<script type="text/javascript">
+    RED.nodes.registerType('snmp-trap-listener', {
+        category: 'input',
+        color: '#9574d8',
+        defaults: {
+
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "bridge",
+        label: function () {
+            return this.name||"snmp-trap-listener";
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="snmp-trap-listener">
+    <div class="form-row">
+        <!--<label for="node-input-name"><i class="icon-tag"></i> Name</label>-->
+        <!--<input type="text" id="node-input-name" placeholder="Name">-->
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="snmp-trap-listener">
+    <p>Node that receives Snmp traps</p>
+</script>
