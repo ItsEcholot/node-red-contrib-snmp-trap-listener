@@ -4,14 +4,28 @@ const snmp              = require('snmpjs');
 module.exports = (RED, debugSettings) => {
     if (!RED && debugSettings) {
         // Enter debug mode | Run outside of Node-RED
+        SnmpTrapListenerNode(debugSettings);
     }
 
     function SnmpTrapListenerNode(config) {
-        RED.nodes.createNode(this,config);
+        if (RED)
+            RED.nodes.createNode(this,config);
+
         if (!config.port)
             config.port = 161;
 
         let node = this;
+        // Polyfills if RED is unavailable
+        if (!RED) {
+            node.status = options => {
+                console.dir(options);
+            };
+            node.on = (event, cb) => {
+                console.log('Bound to RED event ' + event);
+                console.log('Would execute');
+                console.dir(cb);
+            };
+        }
         let timeoutStatus;
         node.status({fill: 'yellow', shape: 'dot', text: 'connecting'});
         const trapd = snmp.createTrapListener();
