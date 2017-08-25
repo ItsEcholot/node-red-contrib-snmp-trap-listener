@@ -37,6 +37,15 @@ in the following format:
 }
 ```
 
+### Options
+The node contains the following options:
+- Port - Sets the port on which to listen for SNMP traps
+- Community - If set every package get's checked if it contains the same community string as set.  
+If it doesnt't, the package get's denied and a debug message is emitted.
+- IP Filter - If set every package get's checked if its origin matches the IP Filter made from the
+IP and the mask set.
+- OIDs - Only packages that match the OIDs set here get emitted.
+
 Sample Output
 -------------
 ```json
