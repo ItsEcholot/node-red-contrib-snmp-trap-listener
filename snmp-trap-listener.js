@@ -65,7 +65,10 @@ module.exports = (RED, debugSettings) => {
             serializedMsg.varbinds.forEach(variable => {
                 const oids = config.oids.split('\n');
 
-                if (oids.indexOf(variable.oid) !== -1) {
+                if (config.oids && oids.indexOf(variable.oid) !== -1) {
+                    payload.push(variable);
+                }
+                else {
                     payload.push(variable);
                 }
             });
