@@ -28,8 +28,8 @@ module.exports = (RED, debugSettings) => {
         }
         let timeoutStatus;
         if (!config.port) {
-            config.port = 161;
-            node.warn('No port set... Setting port to 161');
+            config.port = 162;
+            node.warn('No port set... Setting port to 162');
         }
         node.status({fill: 'yellow', shape: 'dot', text: 'connecting'});
         const trapd = snmp.createTrapListener();
@@ -40,22 +40,22 @@ module.exports = (RED, debugSettings) => {
             trapd.close();
         });
 
-        // console.dir(config);
         trapd.on('trap', msg => {
             clearTimeout(timeoutStatus);
             node.status({fill: 'blue', shape: 'dot', text: 'ready - trapped'});
             timeoutStatus = setTimeout(() => {
                 node.status({fill: 'green', shape: 'dot', text: 'ready'});
-            }, 50);
+            }, 100);
+            console.log('Received trap from agent', msg.pdu.agent_addr);
 
             if (config.community)
                 if (msg.community.toString() !== config.community) {
-                    node.warn('Received trap with wrong community string');
+                    console.log(`Received trap with non matching community string: Expected ${config.community} received ${msg.community.toString()}`);
                     return;
                 }
             if (config.ipfilter && config.ipmask)
-                if ((IPnumber(config.ipfilter) & IPmask(config.ipmask)) != IPnumber(msg._src.address)) {
-                    node.warn('Received trap with wrong ip according to filter settings');
+                if ((IPnumber(config.ipfilter) & IPmask(config.ipmask)) != IPnumber(msg.src.address)) {
+                    console.log(`Received trap with wrong ip according to filter settings: ${msg.src.address}`);
                     return;
                 }
 
@@ -63,18 +63,22 @@ module.exports = (RED, debugSettings) => {
             const serializedMsg = snmp.message.serializer(msg)['pdu'];
 
             serializedMsg.varbinds.forEach(variable => {
-                const oids = config.oids.split('\n');
-
-                if (config.oids && oids.indexOf(variable.oid) !== -1) {
-                    payload.push(variable);
-                }
-                else {
-                    payload.push(variable);
-                }
+                payload.push(variable);
             });
 
             if (payload.length > 0)
-                node.send({payload});
+                node.send({
+                    payload,
+                    enterprise: serializedMsg.enterprise,
+                    agent_addr: serializedMsg.agent_addr,
+                    generic_trap: serializedMsg.generic_trap,
+                    specific_trap: serializedMsg.specific_trap,
+                    time_stamp: serializedMsg.time_stamp,
+                    src: msg.src,
+                    version: msg.version
+                });
+            else
+                console.log('Trap had empty payload');
         });
 
         trapd.bind({family: 'udp4', port: parseInt(config.port)}, () => {

@@ -44,10 +44,9 @@ The node contains the following options:
 If it doesnt't, the package get's denied and a debug message is emitted.
 - IP Filter - If set every package get's checked if its origin matches the IP Filter made from the
 IP and the mask set.
-- OIDs - Only packages that match the OIDs set here get emitted.
 
-Sample Output
--------------
+Sample Output Payload
+---------------------
 ```json
 [
   {
