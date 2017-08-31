@@ -1,5 +1,7 @@
 const util              = require('util');
 const snmp              = require('snmpjs');
+const moment            = require('moment');
+const logTimeFormat     = 'DD MMM HH:mm:ss - [[log]] ';
 
 module.exports = (RED, debugSettings) => {
     if (!RED && debugSettings) {
@@ -15,21 +17,22 @@ module.exports = (RED, debugSettings) => {
         // Polyfills if RED is unavailable
         if (!RED) {
             node.status = options => {
+                console.log(moment().format(logTimeFormat) + 'Debug options:');
                 console.dir(options);
             };
             node.on = (event, cb) => {
-                console.log('Bound to RED event ' + event);
-                console.log('Would execute');
+                console.log(moment().format(logTimeFormat) + 'Bound to RED event ' + event);
+                console.log(moment().format(logTimeFormat) + 'Would execute');
                 console.dir(cb);
             };
             node.warn = msg => {
-                console.warn(msg);
+                console.warn(moment().format(logTimeFormat) + msg);
             };
         }
         let timeoutStatus;
         if (!config.port) {
             config.port = 162;
-            node.warn('No port set... Setting port to 162');
+            node.warn(moment().format(logTimeFormat) + 'No port set... Setting port to 162');
         }
         node.status({fill: 'yellow', shape: 'dot', text: 'connecting'});
         const trapd = snmp.createTrapListener();
@@ -46,16 +49,16 @@ module.exports = (RED, debugSettings) => {
             timeoutStatus = setTimeout(() => {
                 node.status({fill: 'green', shape: 'dot', text: 'ready'});
             }, 100);
-            console.log('Received trap from agent', msg.pdu.agent_addr);
+            console.log(moment().format(logTimeFormat) + 'Received trap from agent', msg.pdu.agent_addr);
 
             if (config.community)
                 if (msg.community.toString() !== config.community) {
-                    console.log(`Received trap with non matching community string: Expected ${config.community} received ${msg.community.toString()}`);
+                    console.log(moment().format(logTimeFormat) + `Received trap with non matching community string: Expected ${config.community} received ${msg.community.toString()}`);
                     return;
                 }
             if (config.ipfilter && config.ipmask)
                 if ((IPnumber(config.ipfilter) & IPmask(config.ipmask)) != IPnumber(msg.src.address)) {
-                    console.log(`Received trap with wrong ip according to filter settings: ${msg.src.address}`);
+                    console.log(moment().format(logTimeFormat) + `Received trap with wrong ip according to filter settings: ${msg.src.address}`);
                     return;
                 }
 
@@ -78,7 +81,7 @@ module.exports = (RED, debugSettings) => {
                     version: msg.version
                 });
             else
-                console.log('Trap had empty payload');
+                console.log(moment().format(logTimeFormat) + 'Trap had empty payload');
         });
 
         trapd.bind({family: 'udp4', port: parseInt(config.port)}, () => {
