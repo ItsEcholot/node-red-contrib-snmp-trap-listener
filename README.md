@@ -84,3 +84,4 @@ Run index.js with node to start the listener in your debugger of choice.
 Built with / Dependencies
 -------------------------
 - [snmpjs](https://github.com/joyent/node-snmpjs) - SNMP library
+- [moment](https://github.com/moment/moment) - Timestamp format library
