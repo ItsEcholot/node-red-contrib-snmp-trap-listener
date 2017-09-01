@@ -1,7 +1,7 @@
 const util              = require('util');
 const snmp              = require('snmpjs');
 const moment            = require('moment');
-const logTimeFormat     = 'DD MMM HH:mm:ss - [[log]] ';
+const logTimeFormat     = 'D MMM HH:mm:ss - [[log]] ';
 
 module.exports = (RED, debugSettings) => {
     if (!RED && debugSettings) {
