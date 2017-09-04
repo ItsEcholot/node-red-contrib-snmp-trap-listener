@@ -39,7 +39,6 @@ module.exports = (RED, debugSettings) => {
 
         node.on('close', function() {
             // Cleanup before node is being deleted.
-            node.warn('Restarting');
             trapd.close();
         });
 
@@ -85,7 +84,7 @@ module.exports = (RED, debugSettings) => {
         });
 
         trapd.bind({family: 'udp4', port: parseInt(config.port)}, () => {
-            node.warn(`Success binding to port ${config.port} and listening for traps`);
+            console.log(moment().format(logTimeFormat) + `Success binding to port ${config.port} and listening for traps`);
             node.status({fill: 'green', shape: 'dot', text: 'ready'});
         });
     }
