@@ -6,6 +6,7 @@
   "repository": "https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener.git",
   "author": "Marc Berchtold <marc.berchtold@hotmail.de>",
   "license": "MIT",
+  "keywords": [ "node-red" ],
   "node-red": {
     "nodes": {
       "snmp-trap-listener": "snmp-trap-listener.js"
