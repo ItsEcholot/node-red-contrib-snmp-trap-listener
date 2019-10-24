@@ -16,6 +16,6 @@
   },
   "dependencies": {
     "moment": "^2.18.1",
-    "snmpjs": "git+https://github.com/joyent/node-snmpjs.git"
+    "snmpjs": "^0.1.8"
   }
 }
