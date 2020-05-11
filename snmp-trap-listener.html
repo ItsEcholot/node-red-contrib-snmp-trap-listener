@@ -1,10 +1,18 @@
 <script type="text/javascript">
-    RED.nodes.registerType('snmp-trap-listener', {
-        category: 'input',
-        color: '#9574d8',
+    RED.nodes.registerType("snmp-trap-listener", {
+        category: "input",
+        color: "#9574d8",
         defaults: {
             port: {value: 162, required: true, validate: RED.validators.number()},
+			snmpV1: {value: true}, 
+			snmpV2: {value: true},
+			snmpV3: {value: true},
             community: {value: ""},
+			user_name: {value: ""},
+			user_authProtocol: {value: "none"},
+			user_authKey: {value: ""},
+			user_privProtocol: {value: "none"},
+			user_privKey: {value: ""},
             ipfilter: {value: ""},
             ipmask: {value: ""},
         },
@@ -13,7 +21,90 @@
         icon: "bridge.png",
         label: function () {
             return this.name||"snmp-trap-listener";
-        }
+        },
+		oneditprepare: function () {
+			let node = this
+			
+			let portPrevious = null
+			let portSelector = $("#node-input-port")
+			portSelector.on("focus", function () {
+				portPrevious = this.value
+			}).change(function () {
+				if (portPrevious == null) {
+					portPrevious = $("#node-input-port").val()
+				}
+				if (node.port) {
+					node.port = parseInt(node.port)
+				}
+			})
+			
+			let communityShow = $("#node-community-show")
+			let communityPrevious = null
+			let communitySelector = $("#node-input-community")
+			communitySelector.on("focus", function () {
+				communityPrevious = this.value
+			}).change(function () {
+				if (communityPrevious == null) {
+					communityPrevious = $("#node-input-community").val()
+				}
+			})
+			
+			let snmpV1Previous = null
+			let snmpV2Previous = null
+			
+			let snmpV1Checkbox = $("#node-input-snmpV1")
+			snmpV1Checkbox.on("focus", function () {
+				snmpV1Previous = this.is(":checked")
+			}).change(function () {
+				snmpV1Previous = $("#node-input-snmpV1").is(":checked")
+				snmpV2Previous = $("#node-input-snmpV2").is(":checked")
+				if (communityPrevious == null) {
+					communityPrevious = $("#node-input-community").val()
+				}
+				if ((snmpV1Previous) || (snmpV2Previous)) {
+					node.community.value = communityPrevious
+					communityShow.show()
+				} else {
+					communityPrevious = node.community.value
+					node.community.value = ""
+					communityShow.hide()
+				}
+			});
+			
+			let snmpV2Selector = $("#node-input-snmpV2")
+			snmpV2Selector.on("focus", function () {
+				snmpV2Previous = this.is(":checked")
+			}).change(function () {
+				snmpV1Previous = $("#node-input-snmpV1").is(":checked")
+				snmpV2Previous = $("#node-input-snmpV2").is(":checked")
+				if (communityPrevious == null) {
+					communityPrevious = $("#node-input-community").val()
+				}
+				if ((snmpV1Previous) || (snmpV2Previous)) {
+					node.community.value = communityPrevious
+					communityShow.show()
+				} else {
+					communityPrevious = node.community.value
+					node.community.value = ""
+					communityShow.hide()
+				}
+			})
+			
+			let userShow = $("#node-user-show")
+			
+			let snmpV3Previous = null
+			let snmpV3Selector = $("#node-input-snmpV3")
+			snmpV3Selector.on("focus", function () {
+				snmpV3Previous = this.is(":checked")
+			}).change(function () {
+				snmpV3Previous = $("#node-input-snmpV3").is(":checked")
+				if ((snmpV3Previous)) {
+					userShow.show()
+				} else {
+					userShow.hide()
+				}
+			})
+		}
     });
 </script>
 
@@ -21,21 +112,215 @@
     <div class="form-row">
         <!--<label for="node-input-name"><i class="icon-tag"></i> Name</label>-->
         <!--<input type="text" id="node-input-name" placeholder="Name">-->
-
-        <label for="node-input-port"><i class="icon-tag"></i> Port</label>
+	</div>
+	
+	<div class="form-row">
+        <label for="node-input-port"><i class="fa fa-link"></i> Port</label>
         <input type="number" id="node-input-port"></input>
-<br>
-        <label for="node-input-community"><i class="icon-tag"></i> Community</label>
-        <input type="text" id="node-input-community" placeholder="Community">
-<br>
-        <label for="node-input-ipfilter"><i class="icon-tag"></i> IP Filter - IP</label>
-        <input type="text" id="node-input-ipfilter" placeholder="127.0.0.1">
-<br>
-        <label for="node-input-ipmask"><i class="icon-tag"></i> IP Filter - Network mask</label>
-        <input type="number" id="node-input-ipmask" placeholder="32">
+	</div>
+	<hr>
+    <div class="header">SNMP Version</div>
+	<div class="form-row">
+		<label for="node-input-snmpV1"><i class="fa fa-th-list"></i> v1</label>
+		<input type="checkbox" id="node-input-snmpV1" style="max-width:10px">
+	</div>
+	<div class="form-row">
+		<label for="node-input-snmpV2"><i class="fa fa-th-list"></i> v2c</label>
+		<input type="checkbox" id="node-input-snmpV2" style="max-width:10px">
+	</div>
+	<div class="form-row">
+		<label for="node-input-snmpV3"><i class="fa fa-th-list"></i> v3</label>
+		<input type="checkbox" id="node-input-snmpV3" style="max-width:10px">
+	</div>
+	<hr>
+	<div id="node-community-show">
+		<div class="header">SNMP v1/v2c</div>
+		<div class="form-row">
+			<label for="node-input-community"><i class="fa fa-th"></i> Community</label>
+			<input type="text" id="node-input-community" placeholder="Community">
+		</div>
+		<hr>
     </div>
+	<div id="node-user-show">
+		<div class="header">SNMP v3</div>
+		<div class="form-row">			
+			<label for="node-input-user_name"><i class="fa fa-th"></i> Username</label>
+			<input type="text" id="node-input-user_name" placeholder="Username">
+		</div>
+		<div class="form-row"><i class="fa fa-minus"></i> Authentication</div>
+		<div class="form-row">
+			<label for="node-input-user_authProtocol"><i class="fa fa-th"></i> Protocol</label>
+			<select type="text" id="node-input-user_authProtocol">
+				<option value="none">Disabled</option>
+				<option value="md5">MD5</option>
+				<option value="sha">SHA</option>
+			</select>
+		</div>
+		<div class="form-row">
+			<label for="node-input-user_authKey"><i class="fa fa-th"></i> Key</label>
+			<input type="text" id="node-input-user_authKey" placeholder="">
+		</div>
+		<div class="form-row"><i class="fa fa-minus"></i> Encryption</div>
+		<div class="form-row">
+			<label for="node-input-user_privProtocol"><i class="fa fa-th"></i> Protocol</label>
+			<select type="text" id="node-input-user_privProtocol">
+				<option value="none">Disabled</option>
+				<option value="des">DES</option>
+				<option value="aes">AES</option>
+			</select>
+		</div>
+		<div class="form-row">
+			<label for="node-input-user_privKey"><i class="fa fa-th"></i> Key</label>
+			<input type="text" id="node-input-user_privKey" placeholder="">
+		</div>
+		<hr>
+    </div>
+    <div class="header">IP Filter</div>
+	<div class="form-row">
+		<label for="node-input-ipfilter"><i class="fa fa-filter"></i> IP Address</label>
+		<input type="text" id="node-input-ipfilter" placeholder="127.0.0.1">
+	</div>
+	<div class="form-row">
+		<label for="node-input-ipmask"><i class="fa fa-filter"></i> Network mask</label>
+		<input type="text" id="node-input-ipmask" placeholder="32">
+	</div>
 </script>
 
 <script type="text/x-red" data-help-name="snmp-trap-listener">
-    <p>Node that receives Snmp traps</p>
+	<p>Receives SNMP Traps</p>
+    <h3>Configuration Settings</h3>
+	<p>
+		<ul>
+			<li>Port - Sets the port on which to listen for SNMP traps</li>
+			<li>SNMP Version - Select which version of SNMP should be used.</li>
+			<li>SNMP v1/v2c:
+				<ul>
+					<li>Community - Network community string. The community string acts like a user ID or password. A user with the correct community string has access to network information. The default is public.</li>
+				</ul>
+			</li>
+			<li>SNMP v3
+				<ul>
+					<li>Username - Username of the SNMP User-based Security Model (USM) user.</li>
+					<li>Authentication Protocol - Authentication protocol used to authenticate messages sent on behalf of the specified Username.</li>
+					<li>Authentication Key - Authentication key used by the selected authentication protocol.</li>
+					<li>Encryption Protocol - Encryption protocol used to encrypt messages sent on behalf of the specified Username.</li>
+					<li>Encryption Key - Encryption key used by the selected encryption protocol.</li>
+				</ul>
+			</li>
+			<li>IP Filter:
+				<ul>
+					<li>IP Address - Base IP address used for the filter.</li>
+					<li>Network mask - Network mask used to calculate the filter IP address range.<br>
+					It can be in four-part dotted-decimal format: 255.255.255.0<br>
+					or in CIDR (Classless Inter-Domain Routing) notation: 24</li>
+				</ul>
+			</li>
+		</ul>
+    </p>
+	<p>
+		Example of IP filter:<br>
+		<table style="border-collapse: collapse; border: 2px solid rgb(200, 200, 200); letter-spacing: 1px; font-family: sans-serif; font-size: .6rem; ">
+			<thead style="background-color: #3f87a6; color: #fff;">
+				<tr>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">IP Address</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">Network mask</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">Filter Start</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">Filter End</td>
+				</tr>
+			</thead>
+			<tbody style="background-color: #e4f0f5;">
+				<tr>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">192.168.1.1</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">24</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">192.168.1.1</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">192.168.1.254</td>
+				</tr>
+				<tr>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">192.168.1.1</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">255.255.255.0</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.1</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.254</td>
+				</tr>
+				<tr>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.25</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">30</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.25</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.26</td>
+				</tr>
+				<tr>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.25</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">255.255.255.252</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.25</td>
+					<td style="border: 1px solid rgb(190, 190, 190); padding: 5px 10px;">10.0.1.26</td>
+				</tr>
+			</tbody>
+		</table>
+	</p>
+    <h3>Output</h3>
+	<p>
+		Outputs an object called <b>msg</b> containing <b>msg.payload</b> with an array of variable bindings.<br>
+	</p>
+	<h4>SNMP v1</h4>
+	<p>
+		<code>
+			{<br>
+			&nbsp;&nbsp;"payload":[<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"oid":"1.3.6.1.4.1.13576.10.1.40.4.4.2",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"typename":"OctetString",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"value":[80,108,99,32,83,116,97,114,116],<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"string_value":"Plc Start"<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+			&nbsp;&nbsp;],<br>
+			&nbsp;&nbsp;"enterprise":"1.3.6.1.4.1.13576",<br>
+			&nbsp;&nbsp;"agent_addr":"10.0.1.125",<br>
+			&nbsp;&nbsp;"generic_trap":6,<br>
+			&nbsp;&nbsp;"specific_trap":2,<br>
+			&nbsp;&nbsp;"time_stamp":8932,<br>
+			&nbsp;&nbsp;"src":{<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;"family":"IPv4",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;"address":"10.0.1.125",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;"port":44688<br>
+			&nbsp;&nbsp;},<br>
+			&nbsp;&nbsp;"version":0,<br>
+			&nbsp;&nbsp;"string_version":"Trap",<br>
+			&nbsp;&nbsp;"_msgid":"e7f3490e.2320d8"<br>
+			}
+		</code><br>
+	</p>
+	<h4>SNMP v2c/v3</h4>
+	<p>
+		<code>
+			{<br>
+			&nbsp;&nbsp;"payload":[<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"oid":"1.3.6.1.2.1.1.3.0",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"typename":"TimeTicks",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"value":760,<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"string_value":"760"<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"oid":"1.3.6.1.6.3.1.1.4.1.0",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"typename":"OID",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"value":"1.3.6.1.4.1.13576.0.2",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"string_value":"1.3.6.1.4.1.13576.0.2"<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"oid":"1.3.6.1.4.1.13576.10.1.40.4.4.2",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"typename":"OctetString",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"value":[80,108,99,32,83,116,97,114,116],<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"string_value":"Plc Start"<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+			&nbsp;&nbsp;],<br>
+			&nbsp;&nbsp;"src":{<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;"family":"IPv4",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;"address":"10.0.1.125",<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;"port":28391<br>
+			&nbsp;&nbsp;},<br>
+			&nbsp;&nbsp;"version":1,<br>
+			&nbsp;&nbsp;"string_version":"TrapV2",<br>
+			&nbsp;&nbsp;"_msgid":"d9562ebf.2f62d"<br>
+			}
+		</code>
+	</p>
 </script>
