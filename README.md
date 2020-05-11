@@ -3,10 +3,10 @@ Node-RED SNMP Trap Listener
 
 [![NPM](https://nodei.co/npm/node-red-contrib-snmp-trap-listener.png)](https://nodei.co/npm/node-red-contrib-snmp-trap-listener/)
 
-This Node-RED node listen for SNMP Trap packages on the configured port.  
-Trap which do meet the filter setting will emitted on the node output.
+This Node-RED node listens for SNMP Trap packages on the configured port.  
+Trap which do meet the filter setting will be emitted on the node output.
 
-The filter option are:  
+The filter options are:  
 SNMP version (v1, v2c, v3)  
 Community string (v1 & v2c only)  
 User credential (v3 only)  
