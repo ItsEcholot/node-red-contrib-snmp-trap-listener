@@ -1,15 +1,15 @@
 {
 	"name": "node-red-contrib-snmp-trap-listener",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Node-RED node that receives snmp traps.",
 	"main": "index.js",
 	"repository": {
-		"type" : "git",
-		"url" : "https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener.git"
+		"type": "git",
+		"url": "https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener.git"
 	},
 	"dependencies": {
-		"moment": "^2.18.1",
-		"net-snmp": "^2.6.4"
+		"moment": "^2.18.x",
+		"net-snmp": "^2.6.x"
 	},
 	"keywords": [
 		"node-red",
@@ -22,12 +22,12 @@
 		}
 	},
 	"author": {
-		"name" : "Marc Berchtold",
-		"url" : "https://github.com/ItsEcholot/"
+		"name": "Marc Berchtold",
+		"url": "https://github.com/ItsEcholot/"
 	},
 	"contributors": {
-		"name" : "Christophe Icard",
-		"url" : "https://github.com/Ekristoffe/"
+		"name": "Christophe Icard",
+		"url": "https://github.com/Ekristoffe/"
 	},
 	"license": "MIT"
 }

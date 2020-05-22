@@ -4,14 +4,47 @@ const moment		= require("moment");
 const logTimeFormat	= "D MMM HH:mm:ss - [[log]] ";
 
 module.exports = (RED, debugSettings) => {
-	if (!RED && debugSettings) {
-		// Enter debug mode | Run outside of Node-RED
-		SnmpTrapListenerNode(debugSettings);
+	
+	// Function to filter IP address (>>> 0 is to keep data as unsigned32)
+	function checkIpFilter(ipfilter,ipmask,ipaddress) {
+		let _ipfilter = ipfilter.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+		let _ipaddress = ipaddress.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+		let _ipmask = ipmask.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+		if (_ipmask) {
+			_ipmask = (+_ipmask[1]<<24) + (+_ipmask[2]<<16) + (+_ipmask[3]<<8) + (+_ipmask[4]) >>> 0;
+		} else {
+			_ipmask =  -1 << (32 - parseInt(ipmask, 10)) >>> 0;
+		}
+		if (_ipfilter && ipmask && _ipaddress) {
+			_ipfilter = (+_ipfilter[1]<<24) + (+_ipfilter[2]<<16) + (+_ipfilter[3]<<8) + (+_ipfilter[4]) >>> 0;
+			
+			let _ipfiltermin;
+			let _ipfiltermax;
+			
+			if (_ipmask === ((Math.pow(2,32) - 1) >>> 0)) { // Netmask 32 is only 1 address
+				_ipfiltermin = _ipfilter >>> 0;
+				_ipfiltermax = _ipfilter >>> 0;
+			} else if (_ipmask === ((Math.pow(2,32) - 2) >>> 0)) { // Netmask 32 is only 2 address (normal calculation with min/max reversed
+				_ipfiltermin = ((_ipfilter | ~ _ipmask) - 1) >>> 0;
+				_ipfiltermax = ((_ipfilter & _ipmask) + 1) >>> 0;
+			} else {
+				_ipfiltermin = ((_ipfilter & _ipmask) + 1) >>> 0;
+				_ipfiltermax = ((_ipfilter | ~ _ipmask) - 1) >>> 0;
+			}
+			_ipaddress = (+_ipaddress[1]<<24) + (+_ipaddress[2]<<16) + (+_ipaddress[3]<<8) + (+_ipaddress[4]) >>> 0;
+			if ((_ipfiltermin <= _ipaddress) && (_ipaddress <= _ipfiltermax)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
 	}
-
-	function SnmpTrapListenerNode(config) {
-		if (RED)
+	
+	function snmpTrapListener(config) {
+		if (RED) {
 			RED.nodes.createNode(this,config);
+		}
 		
 		this.receiver = null;
 		
@@ -19,16 +52,22 @@ module.exports = (RED, debugSettings) => {
 		
 		// Polyfills if RED is unavailable
 		if (!RED) {
-			node.log = msg => {
+			node.debug = (msg) => {
+				console.debug(moment().format(logTimeFormat) + msg);
+			};
+			node.log = (msg) => {
 				console.log(moment().format(logTimeFormat) + msg);
 			};
-			node.warn = msg => {
+			node.warn = (msg) => {
 				console.warn(moment().format(logTimeFormat) + msg);
 			};
-			node.error = msg => {
+			node.error = (msg) => {
 				console.error(moment().format(logTimeFormat) + msg);
 			};
-			node.status = options => {
+			node.send = (payload) => {
+				node.log("Would send: " + JSON.stringify(payload));
+			};
+			node.status = (options) => {
 				node.log("Debug options: " + JSON.stringify(options));
 				// console.log(moment().format(logTimeFormat) + "Debug options:");
 				// console.dir(options);
@@ -51,13 +90,13 @@ module.exports = (RED, debugSettings) => {
 			// console.warn(moment().format(logTimeFormat) + "No port set... Setting port to 162");
 		}
 		
-		if (config.snmpV1 == null) {
+		if ((config.snmpV1 === null) || (typeof config.snmpV1 === "undefined")) {
 			config.snmpV1 = true;
 		}
-		if (config.snmpV2 == null) {
+		if ((config.snmpV2 === null) || (typeof config.snmpV2 === "undefined")) {
 			config.snmpV2 = true;
 		}
-		if (config.snmpV3 == null) {
+		if ((config.snmpV3 === null) || (typeof config.snmpV3 === "undefined")) {
 			config.snmpV3 = true;
 		}
 		
@@ -65,7 +104,7 @@ module.exports = (RED, debugSettings) => {
 
 		// Default options
 		var options = {
-			port: parseInt(config.port),
+			port: parseInt(config.port, 10),
 			disableAuthorization: !(config.community),
 			engineID: "8000B98380XXXXXXXXXXXX", // where the X's are random hex digits
 			transport: "udp4"
@@ -74,7 +113,7 @@ module.exports = (RED, debugSettings) => {
 		var callback = function (error, trap) {
 			if (error) {
 				node.debug("Oops: " + JSON.stringify(error));
-				if (error.name == "RequestFailedError") {
+				if (error.name === "RequestFailedError") {
 					clearTimeout(timeoutStatus);
 					node.status({fill: "red", shape: "dot", text: "error - not trapped"});
 					timeoutStatus = setTimeout(() => {
@@ -82,7 +121,7 @@ module.exports = (RED, debugSettings) => {
 					}, 1000);
 					node.log("Received invalid trap: " + error.message);
 					// console.log(moment().format(logTimeFormat) + "Received invalid trap: ", error.message);
-				} else if (error.errno == "EACCES"){
+				} else if (error.errno === "EACCES"){
 					node.error("can't open port: " + error.port);
 					node.status({fill: "red", shape: "dot", text: "error - port unavailable"});
 				} else {
@@ -94,7 +133,7 @@ module.exports = (RED, debugSettings) => {
 					
 				let trapType = snmp.PduType[trap.pdu.type] || "Unknown";
 				
-				if (((trap.pdu.type == snmp.PduType.Trap) && (config.snmpV1)) || ((trap.pdu.type == snmp.PduType.TrapV2) && ((config.snmpV2) || (config.snmpV3)))) {
+				if (((trap.pdu.type === snmp.PduType.Trap) && (config.snmpV1)) || ((trap.pdu.type === snmp.PduType.TrapV2) && ((config.snmpV2) || (config.snmpV3)))) {
 						
 					clearTimeout(timeoutStatus);
 					node.status({fill: "blue", shape: "dot", text: "ready - trapped"});
@@ -102,9 +141,9 @@ module.exports = (RED, debugSettings) => {
 						node.status({fill: "green", shape: "dot", text: "ready"});
 					}, 1000);
 					// console.log(moment().format(logTimeFormat) + "Received trap from agent", trap.rinfo.address);
-					if ((!config.ipfilter) || (!config.ipmask) || (CheckIpFilter(config.ipfilter, config.ipmask, trap.rinfo.address))) {
+					if ((!config.ipfilter) || (!config.ipmask) || (checkIpFilter(config.ipfilter, config.ipmask, trap.rinfo.address))) {
 						let payload = [];
-						trap.pdu.varbinds.forEach(variable => {
+						trap.pdu.varbinds.forEach((variable) => {
 							payload.push({
 								oid: variable.oid,
 								typename: snmp.ObjectType[variable.type],
@@ -112,7 +151,7 @@ module.exports = (RED, debugSettings) => {
 								string_value: variable.value.toString()
 							});
 						});
-						if (trap.pdu.type == snmp.PduType.Trap) {
+						if (trap.pdu.type === snmp.PduType.Trap) {
 							node.log("Received " + trapType + " from " + trap.rinfo.address + ": " + trap.pdu.enterprise);
 							// console.log (now + ": " + trapType + ": " + trap.rinfo.address + " : " + trap.pdu.enterprise);
 							node.send({
@@ -164,53 +203,67 @@ module.exports = (RED, debugSettings) => {
 		node.receiver = snmp.createReceiver (options, callback);
 		node.log("Listening for traps on port: " + config.port);
 		let authorizer = node.receiver.getAuthorizer ();
-		if (((config.snmpV1) || (config.snmpV2)) && (config.community)) {
-			node.debug("Adding Community: " + config.community);
-			authorizer.addCommunity(config.community);
+		if (((config.snmpV1) || (config.snmpV2))) {
+			let communities = config.communities || [];
+			let i;
+			for (i = 0; (i < communities.length); i += 1) {
+				let community = communities[i].community;
+				if (community !== "") {
+					node.log("Adding Community: " + community);
+					authorizer.addCommunity(community);
+				}
+			}
 		}
-		if ((config.snmpV3) && (config.user_name)) {
-			let user_level;
-			if (config.user_authProtocol == "none") {
-				user_level = snmp.SecurityLevel.noAuthNoPriv;
-			} else if (config.user_privProtocol == "none") {
-				user_level = snmp.SecurityLevel.authNoPriv;
-			} else {
-				user_level = snmp.SecurityLevel.authPriv;
+		if ((config.snmpV3)) {
+			let users = config.users || [];
+			let i;
+			for (i = 0; (i < users.length); i += 1) {
+				let user = users[i];
+				if ((user.name !== "") && ((user.authProtocol === "none") || (user.authKey !== "")) && ((user.privProtocol === "none") || (user.privKey !== ""))) {
+					let level;
+					if (user.authProtocol === "none") {
+						level = snmp.SecurityLevel.noAuthNoPriv;
+					} else if (user.privProtocol === "none") {
+						level = snmp.SecurityLevel.authNoPriv;
+					} else {
+						level = snmp.SecurityLevel.authPriv;
+					}
+					let authProtocol;
+					switch(user.authProtocol) {
+						case "md5":
+							authProtocol = snmp.AuthProtocols.md5;
+							break;
+						case "sha":
+							authProtocol = snmp.AuthProtocols.sha;
+							break;
+						default:
+							authProtocol = snmp.AuthProtocols.md5;
+							break;
+					}
+					let privProtocol;
+					switch(user.privProtocol) {
+						case "des":
+							privProtocol = snmp.PrivProtocols.des;
+							break;
+						case "aes":
+							privProtocol = snmp.PrivProtocols.aes;
+							break;
+						default:
+							privProtocol = snmp.PrivProtocols.des;
+							break;
+					}
+					let User = {
+						name: user.name,
+						level: level,
+						authProtocol: authProtocol,
+						authKey: user.authKey,
+						privProtocol: privProtocol,
+						privKey: user.privKey
+					};
+					node.log("Adding User: " + JSON.stringify(User));
+					authorizer.addUser(User);
+				}
 			}
-			let user_authProtocol;
-			switch(config.user_authProtocol) {
-				case "md5":
-					user_authProtocol = snmp.AuthProtocols.md5;
-					break;
-				case "sha":
-					user_authProtocol = snmp.AuthProtocols.sha;
-					break;
-				default:
-					user_authProtocol = snmp.AuthProtocols.md5;
-					break;
-			}
-			let user_privProtocol;
-			switch(config.user_privProtocol) {
-				case "des":
-					user_privProtocol = snmp.PrivProtocols.des;
-					break;
-				case "aes":
-					user_privProtocol = snmp.PrivProtocols.aes;
-					break;
-				default:
-					user_privProtocol = snmp.PrivProtocols.des;
-					break;
-			}
-			let user = {
-				name: config.user_name,
-				level: user_level,
-				authProtocol: user_authProtocol,
-				authKey: config.user_authKey,
-				privProtocol: user_privProtocol,
-				privKey: config.user_privKey
-			};
-			node.debug("Adding User: " + JSON.stringify(user));
-			authorizer.addUser(user);
 		}
 		node.status({fill: "green", shape: "dot", text: "ready"});
 		
@@ -222,39 +275,12 @@ module.exports = (RED, debugSettings) => {
 		});
 	}
 	
-	// Function to filter IP address (>>> 0 is to keep data as unsigned32)
-	function CheckIpFilter(ipfilter,ipmask,ipaddress) {
-		let _ipfilter = ipfilter.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-		let _ipaddress = ipaddress.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-		let _ipmask = ipmask.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-		if (_ipmask) {
-			_ipmask = (+_ipmask[1]<<24) + (+_ipmask[2]<<16) + (+_ipmask[3]<<8) + (+_ipmask[4]) >>> 0;
-		} else {
-			_ipmask =  -1 << (32 - parseInt(ipmask)) >>> 0;
-		}
-		if (_ipfilter && ipmask && _ipaddress) {
-			_ipfilter = (+_ipfilter[1]<<24) + (+_ipfilter[2]<<16) + (+_ipfilter[3]<<8) + (+_ipfilter[4]) >>> 0;
-			
-			let _ipfiltermin;
-			let _ipfiltermax;
-			
-			if (_ipmask == 0xffffffff) { // Netmask 32 is only 1 address
-				_ipfiltermin = _ipfilter >>> 0;
-				_ipfiltermax = _ipfilter >>> 0;
-			} else if (_ipmask == 0xfffffffe) { // Netmask 32 is only 2 address (normal calculation with min/max reversed
-				_ipfiltermin = ((_ipfilter | ~ _ipmask) - 1) >>> 0;
-				_ipfiltermax = ((_ipfilter & _ipmask) + 1) >>> 0;
-			} else {
-				_ipfiltermin = ((_ipfilter & _ipmask) + 1) >>> 0;
-				_ipfiltermax = ((_ipfilter | ~ _ipmask) - 1) >>> 0;
-			}
-			_ipaddress = (+_ipaddress[1]<<24) + (+_ipaddress[2]<<16) + (+_ipaddress[3]<<8) + (+_ipaddress[4]) >>> 0;
-			if ((_ipfiltermin <= _ipaddress) && (_ipaddress <= _ipfiltermax)) return true;
-			else return false;
-		}
-		return false;
+	if (!RED && debugSettings) {
+		// Enter debug mode | Run outside of Node-RED
+		snmpTrapListener(debugSettings);
 	}
-	
-	if (RED)
-		RED.nodes.registerType("snmp-trap-listener", SnmpTrapListenerNode);
+
+	if (RED) {
+		RED.nodes.registerType("snmp-trap-listener", snmpTrapListener);
+	}
 };

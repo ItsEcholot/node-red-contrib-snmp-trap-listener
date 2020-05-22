@@ -1,194 +1,498 @@
 <script type="text/javascript">
-    RED.nodes.registerType("snmp-trap-listener", {
-        category: "input",
-        color: "#9574d8",
-        defaults: {
-            port: {value: 162, required: true, validate: RED.validators.number()},
+	RED.nodes.registerType("snmp-trap-listener", {
+		category: "input",
+		color: "#9574d8",
+		defaults: {
+			port: {value: 162, required: true, validate: RED.validators.number()},
 			snmpV1: {value: true}, 
 			snmpV2: {value: true},
 			snmpV3: {value: true},
-            community: {value: ""},
-			user_name: {value: ""},
-			user_authProtocol: {value: "none"},
-			user_authKey: {value: ""},
-			user_privProtocol: {value: "none"},
-			user_privKey: {value: ""},
-            ipfilter: {value: ""},
-            ipmask: {value: ""},
-        },
-        inputs: 0,
-        outputs: 1,
-        icon: "bridge.png",
-        label: function () {
-            return this.name||"snmp-trap-listener";
-        },
+			communities: {value:[{community:""}]},
+			users: {value:[{name:"", authProtocol:"", authKey:"", privProtocol:"", privKey:""}]},
+			ipfilter: {value: ""},
+			ipmask: {value: ""},
+		},
+		inputs: 0,
+		outputs: 1,
+		icon: "bridge.png",
+		label: function () {
+			return this.name||"snmp-trap-listener";
+		},
 		oneditprepare: function () {
-			let node = this
-			
-			let portPrevious = null
-			let portSelector = $("#node-input-port")
-			portSelector.on("focus", function () {
-				portPrevious = this.value
-			}).change(function () {
-				if (portPrevious == null) {
-					portPrevious = $("#node-input-port").val()
-				}
-				if (node.port) {
-					node.port = parseInt(node.port)
-				}
-			})
-			
-			let communityShow = $("#node-community-show")
-			let communityPrevious = null
-			let communitySelector = $("#node-input-community")
-			communitySelector.on("focus", function () {
-				communityPrevious = this.value
-			}).change(function () {
-				if (communityPrevious == null) {
-					communityPrevious = $("#node-input-community").val()
-				}
-			})
-			
-			let snmpV1Previous = null
-			let snmpV2Previous = null
-			
-			let snmpV1Checkbox = $("#node-input-snmpV1")
-			snmpV1Checkbox.on("focus", function () {
-				snmpV1Previous = this.is(":checked")
-			}).change(function () {
-				snmpV1Previous = $("#node-input-snmpV1").is(":checked")
-				snmpV2Previous = $("#node-input-snmpV2").is(":checked")
-				if (communityPrevious == null) {
-					communityPrevious = $("#node-input-community").val()
-				}
-				if ((snmpV1Previous) || (snmpV2Previous)) {
-					node.community.value = communityPrevious
-					communityShow.show()
-				} else {
-					communityPrevious = node.community.value
-					node.community.value = ""
-					communityShow.hide()
+
+			let node = this;
+
+			let tabs = RED.tabs.create({
+				id: "node-input-snmp-trap-tabs",
+				onchange: function (tab) {
+					$("#node-input-tabs-content").children().hide()
+					$("#" + tab.id).show()
 				}
 			});
+
+			tabs.addTab({
+				id: "snmp-trap-general-tab",
+				label: ("General")
+			});
 			
-			let snmpV2Selector = $("#node-input-snmpV2")
-			snmpV2Selector.on("focus", function () {
-				snmpV2Previous = this.is(":checked")
+			if ((node.snmpV1) || (node.snmpV2)) {
+				tabs.addTab({
+					id: "snmp-trap-community-tab",
+					label: "SNMP v1/v2c"
+				});
+			}
+			
+			if (node.snmpV3) {
+				tabs.addTab({
+					id: "snmp-trap-user-tab",
+					label: "SNMP v3"
+				});
+			}
+			
+			let portPrevious = null;
+			let portSelector = $("#node-input-port");
+			portSelector.on("focus", function () {
+				portPrevious = portSelector.value
 			}).change(function () {
-				snmpV1Previous = $("#node-input-snmpV1").is(":checked")
-				snmpV2Previous = $("#node-input-snmpV2").is(":checked")
-				if (communityPrevious == null) {
-					communityPrevious = $("#node-input-community").val()
+				if (portPrevious == null) {
+					portPrevious = $("#node-input-port").val();
 				}
-				if ((snmpV1Previous) || (snmpV2Previous)) {
-					node.community.value = communityPrevious
-					communityShow.show()
-				} else {
-					communityPrevious = node.community.value
-					node.community.value = ""
-					communityShow.hide()
+				if (node.port) {
+					node.port = parseInt(node.port);
 				}
+			});
+						
+			let snmpV1Current = $("#node-input-snmpV1").is(":checked");
+			let snmpV2Current = $("#node-input-snmpV2").is(":checked");
+			let snmpV3Current = $("#node-input-snmpV3").is(":checked");
+			let snmpV1Previous = $("#node-input-snmpV1").is(":checked");
+			let snmpV2Previous = $("#node-input-snmpV2").is(":checked");
+			let snmpV3Previous = $("#node-input-snmpV3").is(":checked");
+			
+			let snmpV1Checkbox = $("#node-input-snmpV1");
+			snmpV1Checkbox.change(function () {
+				snmpV1Current = $("#node-input-snmpV1").is(":checked");
+				snmpV2Current = $("#node-input-snmpV2").is(":checked");
+				if (((snmpV1Current) || (snmpV2Current)) && !((snmpV1Previous) || (snmpV2Previous))) {
+					if (snmpV3Current) {
+						tabs.removeTab("snmp-trap-user-tab");
+					}
+					tabs.addTab({
+						id: "snmp-trap-community-tab",
+						label: "SNMP v1/v2c"
+					});
+					if (snmpV3Current) {
+						tabs.addTab({
+							id: "snmp-trap-user-tab",
+							label: "SNMP v3"
+						});
+					}
+				} else if (!((snmpV1Current) || (snmpV2Current)) && ((snmpV1Previous) || (snmpV2Previous))) {
+					tabs.removeTab("snmp-trap-community-tab");
+				}
+				snmpV1Previous = snmpV1Current;
+				snmpV2Previous = snmpV2Current;
+			});
+			
+			let snmpV2Checkbox = $("#node-input-snmpV2");
+			snmpV2Checkbox.change(function () {
+				snmpV1Current = $("#node-input-snmpV1").is(":checked");
+				snmpV2Current = $("#node-input-snmpV2").is(":checked");
+				if (((snmpV1Current) || (snmpV2Current)) && !((snmpV1Previous) || (snmpV2Previous))) {
+					if (snmpV3Current) {
+						tabs.removeTab("snmp-trap-user-tab");
+					}
+					tabs.addTab({
+						id: "snmp-trap-community-tab",
+						label: "SNMP v1/v2c"
+					});
+					if (snmpV3Current) {
+						tabs.addTab({
+							id: "snmp-trap-user-tab",
+							label: "SNMP v3"
+						});
+					}
+				} else if (!((snmpV1Current) || (snmpV2Current)) && ((snmpV1Previous) || (snmpV2Previous))) {
+					tabs.removeTab("snmp-trap-community-tab");
+				}
+				snmpV1Previous = snmpV1Current;
+				snmpV2Previous = snmpV2Current;
+			})
+						
+			let snmpV3Checkbox = $("#node-input-snmpV3");
+			snmpV3Checkbox.change(function () {
+				snmpV3Current = $("#node-input-snmpV3").is(":checked");
+				if ((snmpV3Current) && !(snmpV3Previous)) {
+					tabs.addTab({
+						id: "snmp-trap-user-tab",
+						label: "SNMP v3"
+					});
+				} else if (!(snmpV3Current) && (snmpV3Previous)) {
+					tabs.removeTab("snmp-trap-user-tab");
+				}
+				snmpV3Previous = snmpV3Current;
 			})
 			
-			let userShow = $("#node-user-show")
 			
-			let snmpV3Previous = null
-			let snmpV3Selector = $("#node-input-snmpV3")
-			snmpV3Selector.on("focus", function () {
-				snmpV3Previous = this.is(":checked")
-			}).change(function () {
-				snmpV3Previous = $("#node-input-snmpV3").is(":checked")
-				if ((snmpV3Previous)) {
-					userShow.show()
+			
+			
+			
+			
+			
+			
+			// this.resizeRule = function(community,newWidth) {
+			// 	community.find(".node-input-community-value").width(newWidth);
+			// }
+
+			// Generate the coomunity tab
+			function generateCommunity(i, community) {
+				let container = $("<li/>",{style:"background: #fff; margin:0; padding:8px 0px 0px; border-bottom: 1px solid #ccc;"});
+				let rowDiv = $("<div/>",{style:"display:table-row;"}).appendTo(container);
+
+				// Sort button
+				let sortDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle;"}).appendTo(rowDiv);
+				let sortButton = $("<a/>",{href:"#",class:"editor-button", style:"font-size:1.3em; margin-left: 0px; margin-right: 6px;"}).appendTo(sortDiv);
+				$("<i style=\"color:#eee; cursor:move; margin-left:3px;\" class=\"node-input-community-handle fa fa-bars\"></i>").appendTo(sortButton);
+
+				// Value input
+				let valueDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle; width:100%;"}).appendTo(rowDiv);
+				let valueClass ="node-input-community-value"
+				if (!community.community) { valueClass ="node-input-community-value input-error"; }
+				let valueField = $("<input/>",{class:valueClass,type:"text",style:"width: 100%;", placeholder: "e.g. name",value:community.community}).appendTo(valueDiv);valueField.keyup(function() {
+					if ($(this).val() && $(this).hasClass("input-error")) {
+						$(this).removeClass("input-error")
+					}
+					else {
+						if (!$(this).val()) {
+							$(this).addClass("input-error")
+						}
+					}
+				});
+							   
+				// Delete button
+				let deleteDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle;"}).appendTo(rowDiv);
+				let deleteButton = $("<a/>",{href:"#",class:"editor-button", style:"font-size:1.3em; margin-left: 12px; margin-right: 12px;"}).appendTo(deleteDiv);
+				$("<i/>",{class:"fa fa-trash-o"}).appendTo(deleteButton);
+
+				deleteButton.click(function() {
+					container.css({"background":"#fee"});
+					container.fadeOut(300, function() {
+						$(this).remove();
+					});
+				});
+
+				$("#node-input-community-container").append(container);
+			}
+
+			$("#node-input-add-community").click(function() {
+				generateCommunity($("#node-input-community-container").children().length + 1, {});
+				$("#node-input-community-container-div").scrollTop($("#node-input-community-container-div").get(0).scrollHeight);
+			});
+
+			for (let i = 0; i < this.communities.length; i++) {
+				let community = this.communities[i];
+				generateCommunity(i + 1,community);
+			}
+
+			$( "#node-input-community-container" ).sortable({
+				axis: "y",
+				handle:".node-input-community-handle",
+				cursor: "move"
+			});
+			
+			
+			
+			
+			
+			
+			// Generate the user tab
+			function generateUser(i, user) {
+				let container = $("<li/>",{style:"background: #fff; margin:0; padding:8px 0px 0px; border-bottom: 1px solid #ccc;"});
+				let rowDiv = $("<div/>",{style:"display:table-row;"}).appendTo(container);
+
+				// Sort button
+				let sortDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle;"}).appendTo(rowDiv);
+				let sortButton = $("<a/>",{href:"#",class:"editor-button", style:"font-size:1.3em; margin-left: 0px; margin-right: 6px;"}).appendTo(sortDiv);
+				$("<i style=\"color:#eee; cursor:move; margin-left:3px;\" class=\"node-input-user-handle fa fa-bars\"></i>").appendTo(sortButton);
+
+				// Name input
+				let nameDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle; width:33%;"}).appendTo(rowDiv);
+				let nameClass ="node-input-user-name"
+				if (!user.name) { nameClass ="node-input-user-name input-error"; }
+				let nameInput = $("<input/>",{class:nameClass,type:"text",style:"width: 100%;", placeholder: "e.g. name",value:user.name}).appendTo(nameDiv);
+				nameInput.keyup(function() {
+					if ($(this).val() && $(this).hasClass("input-error")) {
+						$(this).removeClass("input-error")
+					}
+					else {
+						if (!$(this).val()) {
+							$(this).addClass("input-error")
+						}
+					}
+
+				});
+
+				// Authentication input
+				let authDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle; width:33%;"}).appendTo(rowDiv);
+				let authProtocolClass ="node-input-user-authProtocol"
+				let authProtocolSelect = $("<select/>",{class:authProtocolClass,type:"text",style:"width: 100%;"}).appendTo(authDiv);
+				let authKeyClass ="node-input-user-authKey"
+				if (!(user.authProtocol === "none") && !(user.authKey)) { authKeyClass ="node-input-user-authKey input-error"; }
+				let authKeyInput = $("<input/>",{class:authKeyClass,type:"text",style:"width: 100%;", placeholder: "Key",value:user.authKey}).appendTo(authDiv);
+				
+				authProtocolSelect.change(function() {
+					if ((($(this).val() === "none") || (authKeyInput.val())) && (authKeyInput.hasClass("input-error"))) {
+						authKeyInput.removeClass("input-error")
+					}
+					else {
+						if (!($(this).val() === "none") && !(authKeyInput.val()) && !(authKeyInput.hasClass("input-error"))) {
+							authKeyInput.addClass("input-error")
+						}
+					}
+					if ((($(this).val() !== "none") || (($(this).val() === "none") && (privProtocolSelect.val() === "none"))) && (privProtocolSelect.hasClass("input-error"))) {
+						privProtocolSelect.removeClass("input-error")
+					}
+					else {
+						if (($(this).val() === "none") && (privProtocolSelect.val() !== "none") && !(privProtocolSelect.hasClass("input-error"))) {
+							privProtocolSelect.addClass("input-error")
+						}
+					}
+				});
+				if (user.authProtocol === "none") {
+					$("<option value=\"none\" selected>Disabled</option>").appendTo(authProtocolSelect);
 				} else {
-					userShow.hide()
+					$("<option value=\"none\">Disabled</option>").appendTo(authProtocolSelect);
 				}
-			})
+				if (user.authProtocol === "md5") {
+					$("<option value=\"md5\" selected>MD5</option>").appendTo(authProtocolSelect);
+				} else {
+					$("<option value=\"md5\">MD5</option>").appendTo(authProtocolSelect);
+				}
+				if (user.authProtocol === "sha") {
+					$("<option value=\"sha\" selected>SHA</option>").appendTo(authProtocolSelect);
+				} else {
+					$("<option value=\"sha\">SHA</option>").appendTo(authProtocolSelect);
+				}
+				
+				authKeyInput.keyup(function() {
+					if (((authProtocolSelect.val() === "none") || ($(this).val())) && ($(this).hasClass("input-error"))) {
+						$(this).removeClass("input-error")
+					}
+					else {
+						if (!(authProtocolSelect.val() === "none") && !($(this).val()) && !($(this).hasClass("input-error"))) {
+							$(this).addClass("input-error")
+						}
+					}
+				});
+
+				// Authentication input
+				let privDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle; width:33%;"}).appendTo(rowDiv);
+				let privProtocolClass ="node-input-user-privProtocol"
+				if ((user.authProtocol === "none") && (user.privProtocol !== "none")) { privProtocolClass ="node-input-user-privProtocol input-error"; }
+				let privProtocolSelect = $("<select/>",{class:privProtocolClass,type:"text",style:"width: 100%;"}).appendTo(privDiv);
+				let privKeyClass ="node-input-user-privKey"
+				if (!(user.privProtocol === "none") && (!user.privKey)) { privKeyClass ="node-input-user-privKey input-error"; }
+				let privKeyInput = $("<input/>",{class:privKeyClass,type:"text",style:"width: 100%;", placeholder: "Key",value:user.privKey}).appendTo(privDiv);
+				
+				privProtocolSelect.change(function() {
+					if ((($(this).val() === "none") || (privKeyInput.val())) && (privKeyInput.hasClass("input-error"))) {
+						privKeyInput.removeClass("input-error")
+					}
+					else {
+						if (!($(this).val() === "none") && !(privKeyInput.val()) && !(privKeyInput.hasClass("input-error"))) {
+							privKeyInput.addClass("input-error")
+						}
+					}
+					if (((authProtocolSelect.val() !== "none") || ((authProtocolSelect.val() === "none") && ($(this).val() === "none"))) && ($(this).hasClass("input-error"))) {
+						$(this).removeClass("input-error")
+					}
+					else {
+						if ((authProtocolSelect.val() === "none") && ($(this).val() !== "none") && !($(this).hasClass("input-error"))) {
+							$(this).addClass("input-error")
+						}
+					}
+				});
+				if (user.privProtocol === "none") {
+					$("<option value=\"none\" selected>Disabled</option>").appendTo(privProtocolSelect);
+				} else {
+					$("<option value=\"none\">Disabled</option>").appendTo(privProtocolSelect);
+				}
+				if (user.privProtocol === "des") {
+					$("<option value=\"des\" selected>DES</option>").appendTo(privProtocolSelect);
+				} else {
+					$("<option value=\"des\">DES</option>").appendTo(privProtocolSelect);
+				}
+				if (user.privProtocol === "aes") {
+					$("<option value=\"aes\" selected>AES</option>").appendTo(privProtocolSelect);
+				} else {
+					$("<option value=\"aes\">AES</option>").appendTo(privProtocolSelect);
+				}
+				
+				privKeyInput.keyup(function() {
+					if (((privProtocolSelect.val() === "none") || ($(this).val())) && ($(this).hasClass("input-error"))) {
+						$(this).removeClass("input-error")
+					}
+					else {
+						if (!(privProtocolSelect.val() === "none") && !($(this).val()) && !($(this).hasClass("input-error"))) {
+							$(this).addClass("input-error")
+						}
+					}
+					
+				if ((user.authProtocol === "none") && (user.privProtocol !== "none")) { authProtocolClass ="node-input-user-privProtocol input-error"; }
+				});
+							   
+				// Delete button
+				let deleteDiv = $("<div/>",{style:"display:table-cell; vertical-align: middle;"}).appendTo(rowDiv);
+				let deleteButton = $("<a/>",{href:"#",class:"editor-button", style:"font-size:1.3em; margin-left: 12px; margin-right: 12px;"}).appendTo(deleteDiv);
+				$("<i/>",{class:"fa fa-trash-o"}).appendTo(deleteButton);
+
+				deleteButton.click(function() {
+					container.css({"background":"#fee"});
+					container.fadeOut(300, function() {
+						$(this).remove();
+					});
+				});
+
+				$("#node-input-user-container").append(container);
+			}
+
+			$("#node-input-add-user").click(function() {
+				generateUser($("#node-input-user-container").children().length + 1, {});
+				$("#node-input-user-container-div").scrollTop($("#node-input-user-container-div").get(0).scrollHeight);
+			});
+
+			for (let i = 0; i < this.users.length; i++) {
+				let user = this.users[i];
+				generateUser(i + 1,user);
+			}
+
+			$( "#node-input-user-container" ).sortable({
+				axis: "y",
+				handle:".node-input-user-handle",
+				cursor: "move"
+			});
+			
+		},
+		oneditsave: function() {
+			let node = this;
+			node.formValue = {};
+			
+			let communities = $("#node-input-community-container").children();
+			node.communities = [];
+			communities.each(function(i) {
+				let community = $(this);
+				// communities: {value:[{community:""}]},
+				let o = {
+					community: community.find(".node-input-community-value").val()
+				};
+				node.communities.push(o);
+			});
+			
+			let users = $("#node-input-user-container").children();
+			node.users = [];
+			users.each(function(i) {
+				let user = $(this);
+				// users: {value:[{name:"", authProtocol:"", authKey:"", privProtocol:"", privKey:""}]},
+				let o = {
+					name: user.find(".node-input-user-name").val(), 
+					authProtocol: user.find(".node-input-user-authProtocol").val(), 
+					authKey: user.find(".node-input-user-authKey").val(), 
+					privProtocol: user.find(".node-input-user-privProtocol").val(), 
+					privKey: user.find(".node-input-user-privKey").val()
+				};
+				node.users.push(o);
+			});
 		}
-    });
+	});
 </script>
 
 <script type="text/x-red" data-template-name="snmp-trap-listener">
-    <div class="form-row">
-        <!--<label for="node-input-name"><i class="icon-tag"></i> Name</label>-->
-        <!--<input type="text" id="node-input-name" placeholder="Name">-->
-	</div>
-	
 	<div class="form-row">
-        <label for="node-input-port"><i class="fa fa-link"></i> Port</label>
-        <input type="number" id="node-input-port"></input>
-	</div>
-	<hr>
-    <div class="header">SNMP Version</div>
-	<div class="form-row">
-		<label for="node-input-snmpV1"><i class="fa fa-th-list"></i> v1</label>
-		<input type="checkbox" id="node-input-snmpV1" style="max-width:10px">
+		<!--<label for="node-input-name"><i class="icon-tag"></i> Name</label>-->
+		<!--<input type="text" id="node-input-name" placeholder="Name">-->
 	</div>
 	<div class="form-row">
-		<label for="node-input-snmpV2"><i class="fa fa-th-list"></i> v2c</label>
-		<input type="checkbox" id="node-input-snmpV2" style="max-width:10px">
+		<ul style="background: #fff; min-width: 600px; margin-bottom: 20px;" id="node-input-snmp-trap-tabs"></ul>
 	</div>
-	<div class="form-row">
-		<label for="node-input-snmpV3"><i class="fa fa-th-list"></i> v3</label>
-		<input type="checkbox" id="node-input-snmpV3" style="max-width:10px">
-	</div>
-	<hr>
-	<div id="node-community-show">
-		<div class="header">SNMP v1/v2c</div>
-		<div class="form-row">
-			<label for="node-input-community"><i class="fa fa-th"></i> Community</label>
-			<input type="text" id="node-input-community" placeholder="Community">
+	<div id="node-input-tabs-content" style="min-height: 170px;">
+		<div id="snmp-trap-general-tab" style="display:none">
+			<div class="form-row">
+				<label for="node-input-port"><i class="fa fa-link"></i> Port</label>
+				<input type="number" id="node-input-port"></input>
+			</div>
+			<hr>
+			<div class="header">SNMP Version</div>
+			<div class="form-row">
+				<label for="node-input-snmpV1"><i class="fa fa-th-list"></i> v1</label>
+				<input type="checkbox" id="node-input-snmpV1" style="max-width:10px">
+			</div>
+			<div class="form-row">
+				<label for="node-input-snmpV2"><i class="fa fa-th-list"></i> v2c</label>
+				<input type="checkbox" id="node-input-snmpV2" style="max-width:10px">
+			</div>
+			<div class="form-row">
+				<label for="node-input-snmpV3"><i class="fa fa-th-list"></i> v3</label>
+				<input type="checkbox" id="node-input-snmpV3" style="max-width:10px">
+			</div>
+			<hr>
+			<div class="header">IP Filter</div>
+			<div class="form-row">
+				<label for="node-input-ipfilter"><i class="fa fa-filter"></i> IP Address</label>
+				<input type="text" id="node-input-ipfilter" placeholder="127.0.0.1">
+			</div>
+			<div class="form-row">
+				<label for="node-input-ipmask"><i class="fa fa-filter"></i> Network mask</label>
+				<input type="text" id="node-input-ipmask" placeholder="32">
+			</div>
 		</div>
-		<hr>
-    </div>
-	<div id="node-user-show">
-		<div class="header">SNMP v3</div>
-		<div class="form-row">			
-			<label for="node-input-user_name"><i class="fa fa-th"></i> Username</label>
-			<input type="text" id="node-input-user_name" placeholder="Username">
+		<div id="snmp-trap-community-tab" style="display:none">
+			<div class="form-row node-input-community-container-row" style="margin-bottom:0px; width:100%;">
+				<div style="display:inline-block; width:100%; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+				  <div style="width:100%; display: inline-block; background-color:#f3f3f3; padding-top:10px; padding-bottom:10px; border-top:0px solid; border-radius:5px 5px 0 0; border-bottom:1px solid #ccc;">
+					  <div style="width:94%; display:table-row;">
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:53px; float:left;"></div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:100%;">Community String</div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:60px;">Remove</div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:22px; float:right;"></div>
+					  </div>
+				  </div>
+				  <div id="node-input-community-container-div" style="height: 273px; padding: 5px; overflow-y:scroll;">
+					<ol id="node-input-community-container" style="list-style-type:none; margin: 0;"></ol>
+				  </div>
+				</div>
+			</div>
+			<div class="form-row">
+				<a href="#" class="editor-button editor-button-small" id="node-input-add-community" style="margin-top: 4px;"><i class="fa fa-plus"></i> <span>add</span></a>
+			</div>
 		</div>
-		<div class="form-row"><i class="fa fa-minus"></i> Authentication</div>
-		<div class="form-row">
-			<label for="node-input-user_authProtocol"><i class="fa fa-th"></i> Protocol</label>
-			<select type="text" id="node-input-user_authProtocol">
-				<option value="none">Disabled</option>
-				<option value="md5">MD5</option>
-				<option value="sha">SHA</option>
-			</select>
+		<div id="snmp-trap-user-tab" style="display:none">
+			<div class="form-row node-input-user-container-row" style="margin-bottom:0px; width:100%;">
+				<div style="display:inline-block; width:100%; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+				  <div style="width:100%; display: inline-block; background-color:#f3f3f3; padding-top:10px; padding-bottom:10px; border-top:0px solid; border-radius:5px 5px 0 0; border-bottom:1px solid #ccc;">
+					  <div style="width:94%; display:table-row;">
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:53px; float:left;"></div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:33%;">Username</div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:33%;">Authentication<br>Protocol / Key</div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:33%;">Encryption<br>Protocol / Key</div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:60px;">Remove</div>
+						<div style="display:table-cell; text-align: center; vertical-align: middle; width:22px; float:right;"></div>
+					  </div>
+				  </div>
+				  <div id="node-input-user-container-div" style="height: 273px; padding: 5px; overflow-y:scroll;">
+					<ol id="node-input-user-container" style="list-style-type:none; margin: 0;"></ol>
+				  </div>
+				</div>
+			</div>
+			<div class="form-row">
+				<a href="#" class="editor-button editor-button-small" id="node-input-add-user" style="margin-top: 4px;"><i class="fa fa-plus"></i> <span>add</span></a>
+			</div>
 		</div>
-		<div class="form-row">
-			<label for="node-input-user_authKey"><i class="fa fa-th"></i> Key</label>
-			<input type="text" id="node-input-user_authKey" placeholder="">
-		</div>
-		<div class="form-row"><i class="fa fa-minus"></i> Encryption</div>
-		<div class="form-row">
-			<label for="node-input-user_privProtocol"><i class="fa fa-th"></i> Protocol</label>
-			<select type="text" id="node-input-user_privProtocol">
-				<option value="none">Disabled</option>
-				<option value="des">DES</option>
-				<option value="aes">AES</option>
-			</select>
-		</div>
-		<div class="form-row">
-			<label for="node-input-user_privKey"><i class="fa fa-th"></i> Key</label>
-			<input type="text" id="node-input-user_privKey" placeholder="">
-		</div>
-		<hr>
-    </div>
-    <div class="header">IP Filter</div>
-	<div class="form-row">
-		<label for="node-input-ipfilter"><i class="fa fa-filter"></i> IP Address</label>
-		<input type="text" id="node-input-ipfilter" placeholder="127.0.0.1">
-	</div>
-	<div class="form-row">
-		<label for="node-input-ipmask"><i class="fa fa-filter"></i> Network mask</label>
-		<input type="text" id="node-input-ipmask" placeholder="32">
 	</div>
 </script>
 
 <script type="text/x-red" data-help-name="snmp-trap-listener">
 	<p>Receives SNMP Traps</p>
-    <h3>Configuration Settings</h3>
+	<h3>Configuration Settings</h3>
 	<p>
 		<ul>
 			<li>Port - Sets the port on which to listen for SNMP traps</li>
@@ -216,7 +520,7 @@
 				</ul>
 			</li>
 		</ul>
-    </p>
+	</p>
 	<p>
 		Example of IP filter:<br>
 		<table style="border-collapse: collapse; border: 2px solid rgb(200, 200, 200); letter-spacing: 1px; font-family: sans-serif; font-size: .6rem; ">
@@ -256,7 +560,7 @@
 			</tbody>
 		</table>
 	</p>
-    <h3>Output</h3>
+	<h3>Output</h3>
 	<p>
 		Outputs an object called <b>msg</b> containing <b>msg.payload</b> with an array of variable bindings.<br>
 	</p>
