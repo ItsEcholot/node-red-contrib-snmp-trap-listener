@@ -7,12 +7,40 @@ snmpTrapListener(null, {
 	snmpV1: true, 
 	snmpV2: true,
 	snmpV3: true,
-	community: "",
-	user_name: "",
-	user_authProtocol: "",
-	user_authKey: "",
-	user_privProtocol: "",
-	user_privKey: "",
+	communities: [
+		{
+			community:"tip"
+		},
+		{
+			community:"tap"
+		},
+		{
+			community:"top"
+		}
+	],
+	users: [
+		{
+			name:"titi", 
+			authProtocol:"", 
+			authKey:"", 
+			privProtocol:"", 
+			privKey:""
+		},
+		{
+			name:"tata", 
+			authProtocol:"", 
+			authKey:"", 
+			privProtocol:"", 
+			privKey:""
+		},
+		{
+			name:"toto", 
+			authProtocol:"", 
+			authKey:"", 
+			privProtocol:"", 
+			privKey:""
+		}
+	],
 	ipfilter: "",
 	ipmask: "",
 });

@@ -99,30 +99,40 @@ It's payload contains an array which contains all received variable bindings.
 ```
 
 ### Options
-The node contains the following options:
-- Port - Sets the port on which to listen for SNMP traps
-- SNMP Version - Select which version of SNMP should be used.
-- SNMP v1/v2c:
-  - Community - Network community string. The community string acts like a user ID or password. A user with the correct community string has access to network information. The default is public.
-- SNMP v3
-  - Username - Username of the SNMP User-based Security Model (USM) user.
-  - Authentication Protocol - Authentication protocol used to authenticate messages sent on behalf of the specified Username.
-  - Authentication Key - Authentication key used by the selected authentication protocol.
-  - Encryption Protocol - Encryption protocol used to encrypt messages sent on behalf of the specified Username.
-  - Encryption Key - Encryption key used by the selected encryption protocol.
-- IP Filter:
-  - IP Address - Base IP address used for the filter.
-  - Network mask - Network mask used to calculate the filter IP address range.  
-   It can be in four-part dotted-decimal format: 255.255.255.0  
-   or in CIDR (Classless Inter-Domain Routing) notation: 24  
+The node contains the following options:  
+-   Port, Sets the port on which to listen for SNMP traps  
 
-  Example of IP filter:
-  | IP Address | Network mask | Filter Start | Filter End |
-  |---|---|---|---|
-  | 192.168.1.1 | 24 | 192.168.1.1 | 192.168.1.254 |
-  | 192.168.1.1 | 255.255.255.0 | 10.0.1.1 | 10.0.1.254 |
-  | 10.0.1.25 | 30 | 10.0.1.25 | 10.0.1.26 |
-  | 10.0.1.25 | 255.255.255.252 | 10.0.1.25 | 10.0.1.26 |
+-   SNMP Version, select which version of SNMP should be used.  
+
+-   SNMP v1/v2c: Community, network community string. The community string acts like a user ID or password. A user with the correct community string has access to network information. The default is public.  
+
+-   SNMP v3: User  
+
+    -   Username, username of the SNMP User-based Security Model (USM) user.  
+
+    -   Authentication Protocol, authentication protocol used to authenticate messages sent on behalf of the specified Username.  
+
+    -   Authentication Key, authentication key used by the selected authentication protocol.  
+
+    -   Encryption Protocol, encryption protocol used to encrypt messages sent on behalf of the specified Username.  
+
+    -   Encryption Key, encryption key used by the selected encryption protocol.  
+
+-   IP Filter:  
+
+    -   IP Address, base IP address used for the filter.  
+
+    -   Network mask, network mask used to calculate the filter IP address range.  
+        It can be in four-part dotted-decimal format: 255.255.255.0  
+        or in CIDR (Classless Inter-Domain Routing) notation: 24
+
+Example of IP filter:
+| IP Address | Network mask | Filter Start | Filter End |
+|---|---|---|---|
+| 192.168.1.1 | 24 | 192.168.1.1 | 192.168.1.254 |
+| 192.168.1.1 | 255.255.255.0 | 10.0.1.1 | 10.0.1.254 |
+| 10.0.1.25 | 30 | 10.0.1.25 | 10.0.1.26 |
+| 10.0.1.25 | 255.255.255.252 | 10.0.1.25 | 10.0.1.26 |
 
 Debugging
 ---------
@@ -131,13 +141,14 @@ Run `node index.js` to start the listener in your debugger of choice.
 Project Informations
 --------------------
 
-### - Current version:
-![GitHub package.json version](https://img.shields.io/github/package-json/v/ItsEcholot/node-red-contrib-snmp-trap-listener)
+![Platform Node-RED](https://img.shields.io/badge/Platform-Node--RED-red)
 
-### - Vulnerabilities:
-![Snyk Vulnerabilities for GitHub Repo](https://img.shields.io/snyk/vulnerabilities/github/ItsEcholot/node-red-contrib-snmp-trap-listener)
+### - Current version
+[![GitHub package.json version](https://img.shields.io/github/package-json/v/ItsEcholot/node-red-contrib-snmp-trap-listener)](https://www.npmjs.com/package/node-red-contrib-snmp-trap-listener)  
+[![NPM download](https://img.shields.io/npm/dm/node-red-contrib-snmp-trap-listener.svg)](http://www.npm-stats.com/~packages/node-red-contrib-snmp-trap-listener)  
+[![NPM download](https://img.shields.io/npm/dw/node-red-contrib-snmp-trap-listener.svg)](http://www.npm-stats.com/~packages/node-red-contrib-snmp-trap-listener)
 
-### - Languages:
+### - Languages
 ![GitHub language count](https://img.shields.io/github/languages/count/ItsEcholot/node-red-contrib-snmp-trap-listener)  
 ![GitHub top language](https://img.shields.io/github/languages/top/ItsEcholot/node-red-contrib-snmp-trap-listener)
 
