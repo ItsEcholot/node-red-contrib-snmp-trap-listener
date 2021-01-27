@@ -109,13 +109,9 @@ The node contains the following options:
 -   SNMP v3: User  
 
     -   Username, username of the SNMP User-based Security Model (USM) user.  
-
     -   Authentication Protocol, authentication protocol used to authenticate messages sent on behalf of the specified Username.  
-
     -   Authentication Key, authentication key used by the selected authentication protocol.  
-
     -   Encryption Protocol, encryption protocol used to encrypt messages sent on behalf of the specified Username.  
-
     -   Encryption Key, encryption key used by the selected encryption protocol.  
 
 -   IP Filter:  
