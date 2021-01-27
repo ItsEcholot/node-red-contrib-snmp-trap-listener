@@ -1,33 +1,50 @@
 {
-	"name": "node-red-contrib-snmp-trap-listener",
-	"version": "2.1.0",
-	"description": "Node-RED node that receives snmp traps.",
-	"main": "index.js",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener.git"
-	},
-	"dependencies": {
-		"moment": "^2.18.x",
-		"net-snmp": "^2.6.x"
-	},
-	"keywords": [
-		"node-red",
-		"snmp",
-		"trap"
-	],
-	"node-red": {
-		"nodes": {
-			"snmp-trap-listener": "snmp-trap-listener.js"
-		}
-	},
-	"author": {
-		"name": "Marc Berchtold",
-		"url": "https://github.com/ItsEcholot/"
-	},
-	"contributors": {
-		"name": "Christophe Icard",
-		"url": "https://github.com/Ekristoffe/"
-	},
-	"license": "MIT"
+    "name": "node-red-contrib-snmp-trap-listener",
+    "version": "2.2.0",
+    "private": false,
+    "description": "Node-RED node that receives snmp traps.",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener.git"
+    },
+    "devDependencies": {
+        "prettier": "^2.2.1"
+    },
+    "dependencies": {
+        "moment": "^2.29.1",
+        "net-snmp": "^3.4.0"
+    },
+    "keywords": [
+        "node-red",
+        "snmp",
+        "trap"
+    ],
+    "engines": {
+        "node": ">=10"
+    },
+    "node-red": {
+        "nodes": {
+        "snmp-trap-listener": "snmp-trap-listener.js"
+        }
+    },
+    "author": {
+        "name": "Marc Berchtold",
+        "url": "https://github.com/ItsEcholot/"
+    },
+    "contributors": [
+        {
+        "name": "Christophe Icard",
+        "url": "https://github.com/Ekristoffe/"
+        }
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener/issues"
+    },
+    "homepage": "https://github.com/ItsEcholot/node-red-contrib-snmp-trap-listener#readme",
+    "scripts": {
+        "prettier-check": "npx prettier --check --config .prettierrc \"./**/*.{js,html}\"",
+        "prettier-write": "npx prettier --write --config .prettierrc \"./**/*.{js,html}\""
+    }
 }
