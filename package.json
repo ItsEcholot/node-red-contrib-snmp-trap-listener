@@ -1,6 +1,6 @@
 {
     "name": "node-red-contrib-snmp-trap-listener",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "private": false,
     "description": "Node-RED node that receives snmp traps.",
     "main": "index.js",
@@ -25,7 +25,7 @@
     },
     "node-red": {
         "nodes": {
-        "snmp-trap-listener": "snmp-trap-listener.js"
+            "snmp-trap-listener": "snmp-trap-listener.js"
         }
     },
     "author": {
@@ -34,8 +34,8 @@
     },
     "contributors": [
         {
-        "name": "Christophe Icard",
-        "url": "https://github.com/Ekristoffe/"
+            "name": "Christophe Icard",
+            "url": "https://github.com/Ekristoffe/"
         }
     ],
     "license": "MIT",
