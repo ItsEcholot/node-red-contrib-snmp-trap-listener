@@ -186,6 +186,8 @@ module.exports = (RED, debugSettings) => {
                 if (
                     (trap.pdu.type === snmp.PduType.Trap && config.snmpV1) ||
                     (trap.pdu.type === snmp.PduType.TrapV2 &&
+                        (config.snmpV2 || config.snmpV3)) ||
+                    (trap.pdu.type === snmp.PduType.InformRequest &&
                         (config.snmpV2 || config.snmpV3))
                 ) {
                     nodeStatus(
